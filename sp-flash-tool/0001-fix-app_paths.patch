@@ -1,0 +1,99 @@
+From 7cc77630096236156c6be9445d51064bc0d1f0cb Mon Sep 17 00:00:00 2001
+From: Florian Klink <flokli@flokli.de>
+Date: Mon, 3 Sep 2018 22:15:57 +0200
+Subject: [PATCH] fix app_paths
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
+
+Using argv[0] as a config directory is ugly. we use
+QDesktopServices::DataLocation instead, and add a wrapper copying over
+defaults from $out/share/…
+
+Of course, it would be much nicer to use QSettings, but as we can't
+change this code, bad luck :-/
+---
+ FlashToolUpdater/main.cpp |  9 +++++++--
+ main.cpp                  | 10 ++++++++--
+ 2 files changed, 15 insertions(+), 4 deletions(-)
+
+diff --git a/FlashToolUpdater/main.cpp b/FlashToolUpdater/main.cpp
+index a3d6eeb..f529c07 100755
+--- a/FlashToolUpdater/main.cpp
++++ b/FlashToolUpdater/main.cpp
+@@ -1,4 +1,5 @@
+ #include <QtCore/QCoreApplication>
++#include <QDesktopServices>
+ 
+ #include "Update.h"
+ #include "CommandLineArguments.h"
+@@ -7,18 +8,22 @@
+ #include <stdio.h>
+ #include <iostream>
+ 
++#include <QDebug>
++
+ 
+ std::string g_app_path;
+ 
+ void init_app_path(char* argv[])
+ {
+-    QDir dir = QFileInfo(argv[0]).absoluteDir();
+-    QString app_path = dir.absolutePath();
++    qDebug() << "init_app_path from FlashToolUpdater/main.cpp";
++    QString app_path = QDesktopServices::storageLocation(QDesktopServices::DataLocation);
++    qDebug() << "g_app_path = " << app_path;
+     g_app_path = app_path.toStdString();
+ }
+ 
+ int main(int argc, char *argv[])
+ {
++    QCoreApplication::setApplicationName("sp-flash-tool"):
+     QCoreApplication a(argc, argv);
+ 
+     init_app_path(argv);
+diff --git a/main.cpp b/main.cpp
+index 9797539..6114e3f 100755
+--- a/main.cpp
++++ b/main.cpp
+@@ -1,4 +1,5 @@
+ #include <QtCore/QCoreApplication>
++#include <QDesktopServices>
+ #include <QtGui/QApplication>
+ #include <QSplashScreen>
+ #include <QString>
+@@ -19,10 +20,13 @@
+ 
+ #include "TimeStamp/TempPlcCtrl.h"
+ 
++#include <QDebug>
++
+ static void init_app_path(char* argv[])
+ {
+-    QDir dir = QFileInfo(argv[0]).absoluteDir();
+-    QString app_path = dir.absolutePath();
++    qDebug() << "init_app_path from main.cpp";
++    QString app_path = QDesktopServices::storageLocation(QDesktopServices::DataLocation);
++    qDebug() << "FileUtils::UpdateAppPath(" << app_path << ")";
+     FileUtils::UpdateAppPath(app_path.toStdString());
+ }
+ 
+@@ -64,6 +68,7 @@ static int runQtApplication(int argc, char *argv[])
+ int runConsoleMode(int argc, char *argv[])
+ {
+     QCoreApplication a(argc, argv);
++    a.setApplicationName("sp-flash-tool");
+     ConsoleMode::ConsoleModeEntry cm_entry;
+     return cm_entry.Run(argc, argv);
+ }
+@@ -74,6 +79,7 @@ int main(int argc, char *argv[])
+     {
+         EnableMemLeakCheck();
+         Utils::SetTextCodec();
++        QCoreApplication::setApplicationName("sp-flash-tool");
+         init_app_path(argv);
+ 
+         if(argc>1)
+-- 
+2.18.0
+
