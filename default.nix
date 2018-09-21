@@ -8,4 +8,5 @@ self: super:
       terranix = super.callPackage ./terranix {};
     };
   });
+  latex-tuddesign-fonts = super.callPackage ./latex-tuddesign-fonts {};
 }
